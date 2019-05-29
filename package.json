@@ -1,0 +1,65 @@
+{
+  "dependencies": {
+    "@wireapp/bot-api": "4.0.42",
+    "cross-env": "5.2.0",
+    "dotenv": "7.0.0",
+    "moment": "2.24.0",
+    "moment-duration-format": "2.2.2",
+    "moment-timezone": "0.5.23",
+    "ms": "2.1.1"
+  },
+  "devDependencies": {
+    "@types/moment-duration-format": "2.2.2",
+    "@types/moment-timezone": "0.5.12",
+    "@types/node": "12.0.3",
+    "@wireapp/eslint-config": "1.1.0",
+    "@wireapp/prettier-config": "0.2.0",
+    "@wireapp/tslint-config": "1.1.0",
+    "eslint": "5.16.0",
+    "eslint-config-prettier": "4.3.0",
+    "eslint-plugin-import": "2.17.3",
+    "eslint-plugin-jsdoc": "7.2.0",
+    "eslint-plugin-no-unsanitized": "3.0.2",
+    "eslint-plugin-prettier": "3.1.0",
+    "eslint-plugin-react": "7.13.0",
+    "prettier": "1.17.1",
+    "rimraf": "2.6.3",
+    "ts-node": "8.0.3",
+    "tslint": "5.16.0",
+    "tslint-config-prettier": "1.18.0",
+    "tslint-plugin-prettier": "2.0.1",
+    "tslint-react": "4.0.0",
+    "tslint-react-hooks": "2.1.0",
+    "typescript": "3.4.2"
+  },
+  "engines": {
+    "node": "10.x.x",
+    "yarn": ">= 1.12.x"
+  },
+  "main": "dist/index.js",
+  "name": "@lambot/wire-conversation-recorder",
+  "prettier": "@wireapp/prettier-config",
+  "private": true,
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bennyn/wire-conversation-recorder.git"
+  },
+  "scripts": {
+    "build": "tsc",
+    "clean": "rimraf dist",
+    "dev": "ts-node src/index.ts",
+    "dist": "yarn clean && yarn build",
+    "fix": "yarn fix:ts && yarn fix:other",
+    "fix:js": "yarn lint:js --fix",
+    "fix:other": "yarn prettier --write",
+    "fix:ts": "yarn lint:ts --fix",
+    "lint": "yarn lint:ts && yarn lint:other",
+    "lint:js": "eslint --ignore-path .gitignore --ext .js,.jsx .",
+    "lint:other": "yarn prettier --list-different",
+    "lint:ts": "tslint --project tsconfig.json",
+    "prettier": "prettier --loglevel silent \"**/*.{json,md,css}\"",
+    "start": "ts-node src/index.ts",
+    "test": "yarn lint"
+  },
+  "version": "0.0.0"
+}
