@@ -2,6 +2,7 @@ import {ClientType} from '@wireapp/api-client/dist/commonjs/client';
 import {Bot} from '@wireapp/bot-api';
 
 import {DebugHandler} from './handler/DebugHandler';
+import {RecordHandler} from "./handler/RecordHandler";
 import {TimeHandler} from './handler/TimeHandler';
 import {UptimeHandler} from './handler/UptimeHandler';
 import {VersionHandler} from './handler/VersionHandler';
@@ -18,9 +19,10 @@ const bot = new Bot(credentials, {
 });
 
 bot.addHandler(new DebugHandler());
+bot.addHandler(new RecordHandler());
 bot.addHandler(new TimeHandler());
-bot.addHandler(new VersionHandler());
 bot.addHandler(new UptimeHandler());
+bot.addHandler(new VersionHandler());
 
 bot
   .start()
