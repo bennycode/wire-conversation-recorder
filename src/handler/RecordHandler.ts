@@ -5,21 +5,76 @@ import fs from 'fs-extra';
 import mime from 'mime-types';
 import path from 'path';
 
+const Printer = require('pdfmake');
+
 class RecordHandler extends MessageHandler {
+  private readonly pdfContent: string[] = ['Wire Conversation'];
+
   async recordText(payload: PayloadBundle): Promise<void> {
     if (this.account && this.account.service) {
       const user = await this.account.service.user.getUsers([payload.from]);
       const text = (payload.content as TextContent).text;
-      console.log(`${user[0].name}: ${text}`);
+      const logMessage = `${user[0].name}: ${text}`;
+      this.pdfContent.push(logMessage);
+      console.log('Logged', logMessage);
     }
+  }
+
+  // Read more: https://pdfmake.github.io/docs/fonts/standard-14-fonts/
+  generatePdf(): Promise<string> {
+    const fontDescriptors = {
+      Roboto: {
+        bold: path.resolve(process.cwd(), 'fonts/Roboto-Medium.ttf'),
+        bolditalics: path.resolve(process.cwd(), 'fonts/Roboto-MediumItalic.ttf'),
+        italics: path.resolve(process.cwd(), 'fonts/Roboto-Italic.ttf'),
+        normal: path.resolve(process.cwd(), 'fonts/Roboto-Regular.ttf'),
+      },
+    };
+
+    const printer = new Printer(fontDescriptors);
+    const pdfDefinition = {
+      content: this.pdfContent,
+      defaultStyle: {
+        font: 'Roboto',
+        fontSize: 11,
+        lineHeight: 1.2,
+      },
+      info: {
+        title: 'Wire Conversation Export',
+      },
+    };
+
+    const pdfDocument = printer.createPdfKitDocument(pdfDefinition);
+
+    const chunks: any[] = [];
+
+    return new Promise(resolve => {
+      pdfDocument.on('data', (chunk: any) => {
+        chunks.push(chunk);
+      });
+
+      pdfDocument.on(
+        'end',
+        (): void => {
+          const result = Buffer.concat(chunks);
+          resolve(`data:application/pdf;base64,${result.toString('base64')}`);
+        }
+      );
+
+      pdfDocument.end();
+    });
   }
 
   async respondToText(payload: PayloadBundle): Promise<void> {
     const content = payload.content as TextContent;
-    if (content.text === '/export') {
+
+    if (content.text === '/fox') {
       const filePath = path.resolve(process.cwd(), 'this-is-a-fox.txt');
       console.log(`Sending file "${filePath}" ...`);
-      await this.sendPDF(payload, filePath);
+      await this.sendAttachment(payload, filePath);
+    } else if (content.text === '/export') {
+      const base64Pdf = await this.generatePdf();
+      await this.sendAttachment(payload, 'export.pdf', base64Pdf);
     }
   }
 
@@ -48,9 +103,9 @@ class RecordHandler extends MessageHandler {
     return contentType;
   }
 
-  async sendPDF(payload: PayloadBundle, filePath: string): Promise<void> {
+  async sendAttachment(payload: PayloadBundle, filePath: string, base64?: string): Promise<void> {
     if (this.account && this.account.service) {
-      const base64String = await fs.readFile(filePath, 'utf8');
+      const base64String = base64 ? base64 : await fs.readFile(filePath, 'utf8');
 
       // Strip data type when building the buffer:
       let base64Data = base64String;
