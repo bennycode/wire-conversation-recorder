@@ -2,6 +2,7 @@
   "extends": ["@wireapp/tslint-config"],
   "rules": {
     "file-header": false,
-    "no-default-export": false
+    "no-default-export": false,
+    "prefer-conditional-expression": false
   }
 }

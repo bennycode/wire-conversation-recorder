@@ -7,7 +7,10 @@ class VersionHandler extends MessageHandler {
     if (payload.type === PayloadBundleType.TEXT) {
       const content = payload.content as TextContent;
       if (content.text === '/version') {
-        await this.sendText(payload.conversation, `Running ${process.env.npm_package_name} v${process.env.npm_package_version}`);
+        await this.sendText(
+          payload.conversation,
+          `Running ${process.env.npm_package_name} v${process.env.npm_package_version}`
+        );
       }
     }
   }
