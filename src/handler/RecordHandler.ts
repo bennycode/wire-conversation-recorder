@@ -65,19 +65,6 @@ class RecordHandler extends MessageHandler {
     });
   }
 
-  async respondToText(payload: PayloadBundle): Promise<void> {
-    const content = payload.content as TextContent;
-
-    if (content.text === '/fox') {
-      const filePath = path.resolve(process.cwd(), 'this-is-a-fox.txt');
-      console.log(`Sending file "${filePath}" ...`);
-      await this.sendAttachment(payload, filePath);
-    } else if (content.text === '/export') {
-      const base64Pdf = await this.generatePdf();
-      await this.sendAttachment(payload, 'export.pdf', base64Pdf);
-    }
-  }
-
   extractDataContentType(encoded: string): string | undefined {
     let result = undefined;
     const mime = encoded.match(/data:([a-zA-Z0-9]+\/[a-zA-Z0-9-.+]+).*,.*/);
@@ -153,8 +140,14 @@ class RecordHandler extends MessageHandler {
   async handleEvent(payload: PayloadBundle): Promise<void> {
     switch (payload.type) {
       case PayloadBundleType.TEXT:
-        await this.recordText(payload);
-        await this.respondToText(payload);
+        const content = payload.content as TextContent;
+
+        if (content.text === '/export') {
+          const base64Pdf = await this.generatePdf();
+          await this.sendAttachment(payload, 'export.pdf', base64Pdf);
+        } else {
+          await this.recordText(payload);
+        }
         break;
     }
   }
