@@ -1,9 +1,11 @@
 import {MessageHandler} from '@wireapp/bot-api';
 import {PayloadBundle, PayloadBundleType} from '@wireapp/core/dist/conversation/';
 import {FileContent, FileMetaDataContent, TextContent} from '@wireapp/core/dist/conversation/content';
+import {Encoder} from 'bazinga64';
 import fs from 'fs-extra';
 import mime from 'mime-types';
 import path from 'path';
+import {MessageEntity} from '../entity/MessageEntity';
 
 const Printer = require('pdfmake');
 
@@ -14,9 +16,16 @@ class RecordHandler extends MessageHandler {
     if (this.account && this.account.service) {
       const user = await this.account.service.user.getUsers([payload.from]);
       const text = (payload.content as TextContent).text;
-      const logMessage = `${user[0].name}: ${text}`;
-      this.pdfContent.push(logMessage);
-      console.log('Logged', logMessage);
+      const messageEntity = new MessageEntity();
+      const encoded = Encoder.toBase64(text);
+      messageEntity.contentBase64 = encoded.asString;
+      messageEntity.contentType = 'text/plain';
+      messageEntity.conversationId = payload.conversation;
+      messageEntity.messageId = payload.id;
+      messageEntity.sendingUserId = payload.from;
+      messageEntity.sendingUserName = user[0].name;
+      await messageEntity.save();
+      console.log('Stored', JSON.stringify(messageEntity));
     }
   }
 

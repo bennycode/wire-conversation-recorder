@@ -6,6 +6,7 @@ import {RecordHandler} from './handler/RecordHandler';
 import {TimeHandler} from './handler/TimeHandler';
 import {UptimeHandler} from './handler/UptimeHandler';
 import {VersionHandler} from './handler/VersionHandler';
+import initDatabase from './initDatabase';
 
 require('dotenv').config();
 
@@ -24,11 +25,7 @@ bot.addHandler(new TimeHandler());
 bot.addHandler(new UptimeHandler());
 bot.addHandler(new VersionHandler());
 
-bot
-  .start()
-  .then(() => {
-    console.log(`Bot runs with account "${credentials.email}" ...`);
-  })
-  .catch(error => {
-    console.error(`Bot fails with "${credentials.email}": ${error.message}`, error);
-  });
+initDatabase()
+  .then(() => bot.start())
+  .then(() => console.log(`Bot runs with account "${credentials.email}" ...`))
+  .catch(error => console.error(`Bot fails with "${credentials.email}": ${error.message}`, error));
