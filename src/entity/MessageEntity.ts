@@ -3,7 +3,7 @@ import {BaseEntity, Column, Entity, PrimaryGeneratedColumn} from 'typeorm';
 @Entity()
 export class MessageEntity extends BaseEntity {
   @PrimaryGeneratedColumn()
-  id: number = 0;
+  id?: number;
   @Column()
   public contentBase64: string;
   @Column()
@@ -16,6 +16,8 @@ export class MessageEntity extends BaseEntity {
   public sendingUserId: string;
   @Column()
   public sendingUserName: string;
+  @Column({type: 'real'})
+  public timestamp: string;
 
   constructor() {
     super();
@@ -25,5 +27,6 @@ export class MessageEntity extends BaseEntity {
     this.messageId = '';
     this.sendingUserId = '';
     this.sendingUserName = '';
+    this.timestamp = '';
   }
 }

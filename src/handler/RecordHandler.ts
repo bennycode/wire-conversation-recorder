@@ -1,36 +1,56 @@
 import {MessageHandler} from '@wireapp/bot-api';
 import {PayloadBundle, PayloadBundleType} from '@wireapp/core/dist/conversation/';
 import {FileContent, FileMetaDataContent, TextContent} from '@wireapp/core/dist/conversation/content';
-import {Encoder} from 'bazinga64';
+import {Decoder, Encoder} from 'bazinga64';
 import fs from 'fs-extra';
 import mime from 'mime-types';
+import moment = require('moment');
 import path from 'path';
 import {MessageEntity} from '../entity/MessageEntity';
 
 const Printer = require('pdfmake');
 
 class RecordHandler extends MessageHandler {
-  private readonly pdfContent: string[] = ['Wire Conversation'];
-
   async recordText(payload: PayloadBundle): Promise<void> {
     if (this.account && this.account.service) {
       const user = await this.account.service.user.getUsers([payload.from]);
       const text = (payload.content as TextContent).text;
-      const messageEntity = new MessageEntity();
       const encoded = Encoder.toBase64(text);
+
+      const messageEntity = new MessageEntity();
       messageEntity.contentBase64 = encoded.asString;
       messageEntity.contentType = 'text/plain';
       messageEntity.conversationId = payload.conversation;
       messageEntity.messageId = payload.id;
       messageEntity.sendingUserId = payload.from;
       messageEntity.sendingUserName = user[0].name;
+      messageEntity.timestamp = payload.timestamp.toString();
+
       await messageEntity.save();
-      console.log('Stored', JSON.stringify(messageEntity));
+
+      console.log('Stored message', JSON.stringify(messageEntity));
     }
   }
 
+  async constructContent(): Promise<string[]> {
+    const contents: string[] = [];
+    const messages: MessageEntity[] = await MessageEntity.getRepository().find();
+
+    for (const message of messages) {
+      if (message.contentType === 'text/plain') {
+        const time = moment(message.timestamp).format('LLLL');
+        const plainText = Decoder.fromBase64(message.contentBase64);
+
+        contents.push(`${message.sendingUserName} on ${time}`);
+        contents.push(plainText.asString);
+      }
+    }
+
+    return Promise.resolve(contents);
+  }
+
   // Read more: https://pdfmake.github.io/docs/fonts/standard-14-fonts/
-  generatePdf(): Promise<string> {
+  async generatePdf(): Promise<string> {
     const fontDescriptors = {
       Roboto: {
         bold: path.resolve(process.cwd(), 'fonts/Roboto-Medium.ttf'),
@@ -42,7 +62,7 @@ class RecordHandler extends MessageHandler {
 
     const printer = new Printer(fontDescriptors);
     const pdfDefinition = {
-      content: this.pdfContent,
+      content: await this.constructContent(),
       defaultStyle: {
         font: 'Roboto',
         fontSize: 11,
@@ -118,7 +138,7 @@ class RecordHandler extends MessageHandler {
       const newFileName = `${fileName}.${String(mime.extension(contentType))}`;
 
       console.log(
-        'File info',
+        'Sending file...',
         JSON.stringify({
           contentType,
           fileName,
