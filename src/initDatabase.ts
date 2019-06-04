@@ -1,21 +1,17 @@
 import 'reflect-metadata';
 import {Connection, createConnection} from 'typeorm';
-import {PostgresConnectionOptions} from 'typeorm/driver/postgres/PostgresConnectionOptions';
-import {SqliteConnectionOptions} from 'typeorm/driver/sqlite/SqliteConnectionOptions';
+import {MysqlConnectionOptions} from 'typeorm/driver/mysql/MysqlConnectionOptions';
 import {MessageEntity} from './entity/MessageEntity';
 
 export default function initDatabase(): Promise<Connection> {
-  const localhost: SqliteConnectionOptions = {
-    database: 'test.db3',
-    type: 'sqlite',
+  const connectionOptions: MysqlConnectionOptions = {
+    database: String(process.env.RDS_DB_NAME),
+    host: String(process.env.RDS_HOSTNAME),
+    password: String(process.env.RDS_PASSWORD),
+    port: parseInt(String(process.env.RDS_PORT), 10),
+    type: 'mysql',
+    username: String(process.env.RDS_USERNAME),
   };
-
-  const production: PostgresConnectionOptions = {
-    type: 'postgres',
-    url: process.env.DATABASE_URL,
-  };
-
-  const connectionOptions = process.env.NODE_ENV === 'production' ? localhost : localhost;
 
   Object.assign(connectionOptions, {
     entities: [MessageEntity],

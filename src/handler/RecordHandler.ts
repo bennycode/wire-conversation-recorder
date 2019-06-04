@@ -57,8 +57,6 @@ class RecordHandler extends MessageHandler {
           }`
         );
       }
-
-      console.log('Stored message', JSON.stringify(messageEntity));
     }
   }
 
@@ -84,13 +82,17 @@ class RecordHandler extends MessageHandler {
         contents.push(plainText.asString);
       } else if (message.contentType.startsWith('image/')) {
         if (message.contentType === Jimp.MIME_GIF) {
-          // "pdfmake" cannot handle GIFs by default so we convert them into JPEG files
-          const gifImage = await Jimp.read(Buffer.from(message.contentBase64, 'base64'));
-          const convertedGif = await gifImage.getBase64Async(Jimp.MIME_JPEG);
-          contents.push({
-            image: convertedGif,
-            width: 200,
-          });
+          try {
+            // "pdfmake" cannot handle GIFs by default so we convert them into JPEG files
+            const gifImage = await Jimp.read(Buffer.from(message.contentBase64, 'base64'));
+            const convertedGif = await gifImage.getBase64Async(Jimp.MIME_JPEG);
+            contents.push({
+              image: convertedGif,
+              width: 200,
+            });
+          } catch (error) {
+            console.warn(`Couldn't convert GIF image with ID "${message.messageId}" to JPEG.`, error);
+          }
         } else {
           contents.push({
             image: `data:${message.contentType};base64,${message.contentBase64}`,
@@ -216,16 +218,6 @@ class RecordHandler extends MessageHandler {
       const contentType: string = this.extractContentType(base64String, filePath);
       const newFileName = `${fileName}.${String(mime.extension(contentType))}`;
 
-      console.log(
-        'Sending file...',
-        JSON.stringify({
-          contentType,
-          fileName,
-          givenExtension,
-          newFileName,
-        })
-      );
-
       const metadata: FileMetaDataContent = {length: data.length, name: newFileName, type: contentType};
 
       const conversationId = payload.conversation;
@@ -272,11 +264,27 @@ class RecordHandler extends MessageHandler {
       case PayloadBundleType.TEXT:
         const textPayload = payload.content as TextContent;
 
-        if (textPayload.text.startsWith('/export')) {
+        if (textPayload.text === '/count') {
+          const recordedMessages = await MessageEntity.getRepository().count({
+            where: {
+              conversationId: payload.conversation,
+            },
+          });
+          await this.sendText(payload.conversation, `Recorded messages in this conversation: ${recordedMessages}`);
+        } else if (textPayload.text.startsWith('/clear')) {
+          await MessageEntity.getRepository().clear();
+          await this.sendText(payload.conversation, `Deleted all recorded messages in database.`);
+        } else if (textPayload.text.startsWith('/export')) {
           const uuids = textPayload.text.match(ValidationUtil.PATTERN.UUID_V4);
           const conversationId = uuids ? uuids[0] : payload.conversation;
-          const base64Pdf = await this.generatePdf(conversationId);
-          await this.sendAttachment(payload, `${conversationId}.pdf`, base64Pdf);
+          await this.sendText(payload.conversation, 'Generating PDF file...');
+          try {
+            const base64Pdf = await this.generatePdf(conversationId);
+            await this.sendAttachment(payload, `${conversationId}.pdf`, base64Pdf);
+          } catch (error) {
+            console.error(`PDF generation failed: ${error.message}`, error);
+            await this.sendText(payload.conversation, `PDF generation failed: ${error.toString()}`);
+          }
         } else {
           await this.recordText(payload);
         }

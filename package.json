@@ -1,6 +1,6 @@
 {
   "dependencies": {
-    "@wireapp/bot-api": "4.0.47",
+    "@wireapp/bot-api": "4.0.52",
     "@wireapp/commons": "1.7.5",
     "@wireapp/lru-cache": "3.1.16",
     "bazinga64": "5.4.6",
@@ -10,15 +10,16 @@
     "jimp": "0.6.4",
     "mime-types": "2.1.24",
     "moment": "2.24.0",
-    "moment-duration-format": "2.2.2",
+    "moment-duration-format": "2.3.1",
     "moment-timezone": "0.5.25",
     "ms": "2.1.1",
+    "mysql": "2.17.1",
     "pdfmake": "0.1.56",
     "reflect-metadata": "0.1.13",
-    "sqlite3": "4.0.8",
     "typeorm": "0.2.17"
   },
   "devDependencies": {
+    "@ffflorian/jszip-cli": "2.2.0",
     "@types/jasmine": "3.3.13",
     "@types/mime-types": "2.1.0",
     "@types/moment-duration-format": "2.2.2",
@@ -48,11 +49,13 @@
     "typescript": "3.5.1"
   },
   "engines": {
-    "node": "10.x.x",
-    "yarn": ">= 1.12.x"
+    "node": "10.x.x"
   },
   "main": "dist/index.js",
-  "name": "@lambot/wire-conversation-recorder",
+  "name": "wire-conversation-recorder",
+  "optionalDependencies": {
+    "sqlite3": "4.0.8"
+  },
   "prettier": "@wireapp/prettier-config",
   "private": true,
   "repository": {
@@ -61,7 +64,8 @@
   },
   "scripts": {
     "build": "tsc",
-    "clean": "rimraf dist",
+    "clean": "rimraf dist zip",
+    "deploy": "yarn dist && yarn zip && eb deploy",
     "dev": "ts-node src/index.ts",
     "dist": "yarn clean && yarn build",
     "fix": "yarn fix:ts && yarn fix:other",
@@ -73,9 +77,10 @@
     "lint:other": "yarn prettier --list-different",
     "lint:ts": "tslint --project tsconfig.json",
     "prettier": "prettier --loglevel silent \"**/*.{json,md,css}\"",
-    "start": "ts-node src/index.ts",
+    "start": "node dist/index.js",
     "test": "yarn lint",
-    "test:node": "nyc jasmine --config=jasmine.json"
+    "test:node": "nyc jasmine --config=jasmine.json",
+    "zip": "jszip-cli"
   },
   "version": "0.0.0"
 }
