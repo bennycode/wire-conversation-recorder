@@ -4,7 +4,7 @@ import {BaseEntity, Column, Entity, PrimaryGeneratedColumn} from 'typeorm';
 export class MessageEntity extends BaseEntity {
   @PrimaryGeneratedColumn()
   id?: number;
-  @Column()
+  @Column({type: 'varchar', length: 100000000})
   public contentBase64: string;
   @Column()
   public contentType: string;

@@ -11,11 +11,11 @@ import {
 import {LRUCache} from '@wireapp/lru-cache';
 import {Decoder, Encoder} from 'bazinga64';
 import fs from 'fs-extra';
-import Jimp = require('jimp');
 import mime from 'mime-types';
-import moment = require('moment');
 import path from 'path';
 import {MessageEntity} from '../entity/MessageEntity';
+import Jimp = require('jimp');
+import moment = require('moment');
 
 const Printer = require('pdfmake');
 
@@ -54,7 +54,7 @@ class RecordHandler extends MessageHandler {
         console.warn(
           `Cannot save message "${payload.id}" from user "${payload.from}" in conversation "${payload.conversation}": ${
             error.message
-          }`
+            }`
         );
       }
     }
