@@ -5,18 +5,26 @@ import {
   FileContent,
   FileMetaDataContent,
   RemoteData,
-  TextContent
+  TextContent,
 } from '@wireapp/core/dist/conversation/content';
+import {LRUCache} from '@wireapp/lru-cache';
 import {Decoder, Encoder} from 'bazinga64';
 import fs from 'fs-extra';
 import mime from 'mime-types';
+import moment = require('moment');
 import path from 'path';
 import {MessageEntity} from '../entity/MessageEntity';
-import moment = require('moment');
 
 const Printer = require('pdfmake');
 
 class RecordHandler extends MessageHandler {
+  private readonly cachedMessages: LRUCache<MessageEntity>;
+
+  constructor() {
+    super();
+    this.cachedMessages = new LRUCache(100);
+  }
+
   async recordText(payload: PayloadBundle): Promise<void> {
     if (this.account && this.account.service) {
       const text = (payload.content as TextContent).text;
@@ -55,10 +63,10 @@ class RecordHandler extends MessageHandler {
 
         contents.push(`${message.sendingUserName} on ${time}`);
         contents.push(plainText.asString);
-      } else if (message.contentType === 'image/jpeg') {
+      } else if (message.contentType.startsWith('image/') && message.contentType !== 'image/gif') {
         contents.push({
           image: `data:${message.contentType};base64,${message.contentBase64}`,
-          width: 200
+          width: 200,
         });
       }
     }
@@ -187,11 +195,24 @@ class RecordHandler extends MessageHandler {
     switch (payload.type) {
       case PayloadBundleType.ASSET_IMAGE:
         if (this.account && this.account.service) {
-          const imagePayload = payload.content as AssetContent;
-          const {uploaded, original} = imagePayload;
-          const imageArray = await this.account.service.conversation.getAsset(uploaded as RemoteData);
-          const base64Data = Encoder.toBase64(imageArray).asString;
-          await this.recordMessage(payload, 'image/jpeg', base64Data);
+          const imagePreview = this.cachedMessages.get(payload.id);
+          if (imagePreview) {
+            const imagePayload = payload.content as AssetContent;
+            const {uploaded} = imagePayload;
+            const imageArray = await this.account.service.conversation.getAsset(uploaded as RemoteData);
+            const base64Data = Encoder.toBase64(imageArray).asString;
+            await this.recordMessage(payload, imagePreview.contentType, base64Data);
+            this.cachedMessages.delete(payload.id);
+          }
+        }
+        break;
+      case PayloadBundleType.ASSET_META:
+        const imagePayload = payload.content as AssetContent;
+        const {original} = imagePayload;
+        if (original) {
+          const message = new MessageEntity();
+          message.contentType = original.mimeType;
+          this.cachedMessages.set(payload.id, message);
         }
         break;
       case PayloadBundleType.TEXT:
