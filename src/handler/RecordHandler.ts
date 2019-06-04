@@ -10,6 +10,7 @@ import {
 import {LRUCache} from '@wireapp/lru-cache';
 import {Decoder, Encoder} from 'bazinga64';
 import fs from 'fs-extra';
+import Jimp = require('jimp');
 import mime from 'mime-types';
 import moment = require('moment');
 import path from 'path';
@@ -63,11 +64,21 @@ class RecordHandler extends MessageHandler {
 
         contents.push(`${message.sendingUserName} on ${time}`);
         contents.push(plainText.asString);
-      } else if (message.contentType.startsWith('image/') && message.contentType !== 'image/gif') {
-        contents.push({
-          image: `data:${message.contentType};base64,${message.contentBase64}`,
-          width: 200,
-        });
+      } else if (message.contentType.startsWith('image/')) {
+        if (message.contentType === Jimp.MIME_GIF) {
+          // "pdfmake" cannot handle GIFs by default so we convert them into JPEG files
+          const gifImage = await Jimp.read(Buffer.from(message.contentBase64, 'base64'));
+          const convertedGif = await gifImage.getBase64Async(Jimp.MIME_JPEG);
+          contents.push({
+            image: convertedGif,
+            width: 200,
+          });
+        } else {
+          contents.push({
+            image: `data:${message.contentType};base64,${message.contentBase64}`,
+            width: 200,
+          });
+        }
       }
     }
 
