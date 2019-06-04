@@ -58,11 +58,12 @@ class RecordHandler extends MessageHandler {
     const messages: MessageEntity[] = await MessageEntity.getRepository().find();
 
     for (const message of messages) {
+      const time = moment(message.timestamp).format('LLLL');
+      contents.push(`${message.sendingUserName} on ${time}`);
+
       if (message.contentType === 'text/plain') {
-        const time = moment(message.timestamp).format('LLLL');
         const plainText = Decoder.fromBase64(message.contentBase64);
 
-        contents.push(`${message.sendingUserName} on ${time}`);
         contents.push(plainText.asString);
       } else if (message.contentType.startsWith('image/')) {
         if (message.contentType === Jimp.MIME_GIF) {
@@ -80,6 +81,8 @@ class RecordHandler extends MessageHandler {
           });
         }
       }
+
+      contents.push('\n\n');
     }
 
     return Promise.resolve(contents);
@@ -88,6 +91,9 @@ class RecordHandler extends MessageHandler {
   // Read more: https://pdfmake.github.io/docs/fonts/standard-14-fonts/
   async generatePdf(): Promise<string> {
     const fontDescriptors = {
+      OpenSansEmoji: {
+        normal: path.resolve(process.cwd(), 'fonts/OpenSansEmoji.ttf'),
+      },
       Roboto: {
         bold: path.resolve(process.cwd(), 'fonts/Roboto-Medium.ttf'),
         bolditalics: path.resolve(process.cwd(), 'fonts/Roboto-MediumItalic.ttf'),
@@ -100,7 +106,7 @@ class RecordHandler extends MessageHandler {
     const pdfDefinition = {
       content: await this.constructContent(),
       defaultStyle: {
-        font: 'Roboto',
+        font: 'OpenSansEmoji',
         fontSize: 11,
         lineHeight: 1.2,
       },
