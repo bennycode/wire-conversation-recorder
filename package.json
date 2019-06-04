@@ -1,6 +1,7 @@
 {
   "dependencies": {
     "@wireapp/bot-api": "4.0.47",
+    "@wireapp/commons": "1.7.5",
     "@wireapp/lru-cache": "3.1.16",
     "bazinga64": "5.4.6",
     "cross-env": "5.2.0",

@@ -1,4 +1,5 @@
 import {MessageHandler} from '@wireapp/bot-api';
+import {ValidationUtil} from '@wireapp/commons';
 import {PayloadBundle, PayloadBundleType} from '@wireapp/core/dist/conversation/';
 import {
   AssetContent,
@@ -61,9 +62,13 @@ class RecordHandler extends MessageHandler {
     }
   }
 
-  async constructContent(): Promise<Object[]> {
+  async getConversationContent(conversationId: string): Promise<Object[]> {
     const contents: Object[] = [];
-    const messages: MessageEntity[] = await MessageEntity.getRepository().find();
+    const messages: MessageEntity[] = await MessageEntity.getRepository().find({
+      where: {
+        conversationId,
+      },
+    });
 
     for (const message of messages) {
       const time = moment(message.timestamp).format('LLLL');
@@ -100,7 +105,16 @@ class RecordHandler extends MessageHandler {
     return Promise.resolve(contents);
   }
 
-  async generatePdf(title: string = 'Wire Conversation Export'): Promise<string> {
+  async getConversationName(conversationId: string): Promise<string> {
+    if (this.account && this.account.service) {
+      const conversation = await this.account.service.conversation.getConversations(conversationId);
+      return conversation.name;
+    } else {
+      return Promise.resolve('Wire Conversation Export');
+    }
+  }
+
+  async generatePdf(conversationId: string): Promise<string> {
     const fontDescriptors = {
       OpenSansEmoji: {
         normal: path.resolve(process.cwd(), 'fonts/OpenSansEmoji.ttf'),
@@ -113,7 +127,8 @@ class RecordHandler extends MessageHandler {
       },
     };
 
-    const content = await this.constructContent();
+    const title = await this.getConversationName(conversationId);
+    const content = await this.getConversationContent(conversationId);
     content.unshift({
       style: 'header',
       text: `${title}\n\n`,
@@ -257,12 +272,11 @@ class RecordHandler extends MessageHandler {
       case PayloadBundleType.TEXT:
         const textPayload = payload.content as TextContent;
 
-        if (textPayload.text === '/export') {
-          if (this.account && this.account.service) {
-            const conversation = await this.account.service.conversation.getConversations(payload.conversation);
-            const base64Pdf = await this.generatePdf(conversation.name);
-            await this.sendAttachment(payload, `${payload.conversation}.pdf`, base64Pdf);
-          }
+        if (textPayload.text.startsWith('/export')) {
+          const uuids = textPayload.text.match(ValidationUtil.PATTERN.UUID_V4);
+          const conversationId = uuids ? uuids[0] : payload.conversation;
+          const base64Pdf = await this.generatePdf(conversationId);
+          await this.sendAttachment(payload, `${conversationId}.pdf`, base64Pdf);
         } else {
           await this.recordText(payload);
         }
