@@ -15,7 +15,7 @@ export default function initDatabase(): Promise<Connection> {
     url: process.env.DATABASE_URL,
   };
 
-  const connectionOptions = process.env.NODE_ENV === 'production' ? production : localhost;
+  const connectionOptions = process.env.NODE_ENV === 'production' ? localhost : localhost;
 
   Object.assign(connectionOptions, {
     entities: [MessageEntity],
