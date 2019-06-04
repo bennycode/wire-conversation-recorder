@@ -18,6 +18,7 @@
     "typeorm": "0.2.17"
   },
   "devDependencies": {
+    "@types/jasmine": "3.3.13",
     "@types/mime-types": "2.1.0",
     "@types/moment-duration-format": "2.2.2",
     "@types/moment-timezone": "0.5.12",
@@ -33,6 +34,8 @@
     "eslint-plugin-no-unsanitized": "3.0.2",
     "eslint-plugin-prettier": "3.1.0",
     "eslint-plugin-react": "7.13.0",
+    "jasmine": "3.4.0",
+    "nyc": "14.1.1",
     "prettier": "1.17.1",
     "rimraf": "2.6.3",
     "ts-node": "8.2.0",
@@ -70,7 +73,8 @@
     "lint:ts": "tslint --project tsconfig.json",
     "prettier": "prettier --loglevel silent \"**/*.{json,md,css}\"",
     "start": "ts-node src/index.ts",
-    "test": "yarn lint"
+    "test": "yarn lint",
+    "test:node": "nyc jasmine --config=jasmine.json"
   },
   "version": "0.0.0"
 }

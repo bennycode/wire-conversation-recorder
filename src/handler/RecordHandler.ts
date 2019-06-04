@@ -47,19 +47,31 @@ class RecordHandler extends MessageHandler {
       messageEntity.sendingUserName = user[0].name;
       messageEntity.timestamp = payload.timestamp.toString();
 
-      await messageEntity.save();
+      try {
+        await messageEntity.save();
+      } catch (error) {
+        console.warn(
+          `Cannot save message "${payload.id}" from user "${payload.from}" in conversation "${payload.conversation}": ${
+            error.message
+          }`
+        );
+      }
 
       console.log('Stored message', JSON.stringify(messageEntity));
     }
   }
 
-  async constructContent(): Promise<string[]> {
-    const contents: any[] = [];
+  async constructContent(): Promise<Object[]> {
+    const contents: Object[] = [];
     const messages: MessageEntity[] = await MessageEntity.getRepository().find();
 
     for (const message of messages) {
       const time = moment(message.timestamp).format('LLLL');
-      contents.push(`${message.sendingUserName} on ${time}`);
+      contents.push({
+        font: 'Roboto',
+        style: ['bold'],
+        text: `${message.sendingUserName} on ${time}`,
+      });
 
       if (message.contentType === 'text/plain') {
         const plainText = Decoder.fromBase64(message.contentBase64);
@@ -82,14 +94,13 @@ class RecordHandler extends MessageHandler {
         }
       }
 
-      contents.push('\n\n');
+      contents.push('\n');
     }
 
     return Promise.resolve(contents);
   }
 
-  // Read more: https://pdfmake.github.io/docs/fonts/standard-14-fonts/
-  async generatePdf(): Promise<string> {
+  async generatePdf(title: string = 'Wire Conversation Export'): Promise<string> {
     const fontDescriptors = {
       OpenSansEmoji: {
         normal: path.resolve(process.cwd(), 'fonts/OpenSansEmoji.ttf'),
@@ -102,16 +113,27 @@ class RecordHandler extends MessageHandler {
       },
     };
 
+    const content = await this.constructContent();
+    content.unshift({
+      style: 'header',
+      text: `${title}\n\n`,
+    });
+
     const printer = new Printer(fontDescriptors);
     const pdfDefinition = {
-      content: await this.constructContent(),
+      content: content,
       defaultStyle: {
         font: 'OpenSansEmoji',
-        fontSize: 11,
-        lineHeight: 1.2,
+        fontSize: 12,
+        lineHeight: 1,
       },
-      info: {
-        title: 'Wire Conversation Export',
+      styles: {
+        header: {
+          alignment: 'center',
+          bold: true,
+          font: 'Roboto',
+          fontSize: 16,
+        },
       },
     };
 
@@ -236,8 +258,11 @@ class RecordHandler extends MessageHandler {
         const textPayload = payload.content as TextContent;
 
         if (textPayload.text === '/export') {
-          const base64Pdf = await this.generatePdf();
-          await this.sendAttachment(payload, 'export.pdf', base64Pdf);
+          if (this.account && this.account.service) {
+            const conversation = await this.account.service.conversation.getConversations(payload.conversation);
+            const base64Pdf = await this.generatePdf(conversation.name);
+            await this.sendAttachment(payload, `${payload.conversation}.pdf`, base64Pdf);
+          }
         } else {
           await this.recordText(payload);
         }

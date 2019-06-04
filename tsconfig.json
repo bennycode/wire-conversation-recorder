@@ -16,5 +16,5 @@
     "strict": true,
     "target": "es6"
   },
-  "exclude": ["dist", "node_modules"]
+  "exclude": ["dist", "src/test", "src/**/*.test*.ts", "node_modules"]
 }
