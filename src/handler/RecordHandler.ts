@@ -10,11 +10,11 @@ import {
 } from '@wireapp/core/dist/conversation/content';
 import {Decoder, Encoder} from 'bazinga64';
 import fs from 'fs-extra';
-import Jimp = require('jimp');
 import mime from 'mime-types';
-import moment = require('moment');
 import path from 'path';
 import {MessageEntity} from '../entity/MessageEntity';
+import Jimp = require('jimp');
+import moment = require('moment');
 
 const Printer = require('pdfmake');
 
@@ -50,7 +50,7 @@ class RecordHandler extends MessageHandler {
         console.warn(
           `Cannot save message "${payload.id}" from user "${payload.from}" in conversation "${payload.conversation}": ${
             error.message
-          }`
+            }`
         );
       }
     }
@@ -242,7 +242,11 @@ class RecordHandler extends MessageHandler {
       case PayloadBundleType.TEXT:
         const textPayload = payload.content as TextContent;
 
-        if (textPayload.text === '/count') {
+
+        if (textPayload.text === '/clear') {
+          await MessageEntity.getRepository().delete({conversationId: payload.conversation});
+          await this.sendText(payload.conversation, `Deleted history backup of THIS conversation.`);
+        } else if (textPayload.text === '/count') {
           const recordedMessages = await MessageEntity.getRepository().count({
             where: {
               conversationId: payload.conversation,
@@ -251,7 +255,7 @@ class RecordHandler extends MessageHandler {
           await this.sendText(payload.conversation, `Recorded messages in this conversation: ${recordedMessages}`);
         } else if (textPayload.text.startsWith('/purge')) {
           await MessageEntity.getRepository().clear();
-          await this.sendText(payload.conversation, `Deleted all recorded messages in database.`);
+          await this.sendText(payload.conversation, `Deleted history backup of ALL conversations.`);
         } else if (textPayload.text.startsWith('/export')) {
           const uuids = textPayload.text.match(ValidationUtil.PATTERN.UUID_V4);
           const conversationId = uuids ? uuids[0] : payload.conversation;
