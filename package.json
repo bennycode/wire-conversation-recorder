@@ -1,8 +1,7 @@
 {
   "dependencies": {
-    "@wireapp/bot-api": "4.0.52",
+    "@wireapp/bot-api": "4.0.53",
     "@wireapp/commons": "1.7.5",
-    "@wireapp/lru-cache": "3.1.16",
     "bazinga64": "5.4.6",
     "cross-env": "5.2.0",
     "dotenv": "8.0.0",
@@ -10,13 +9,13 @@
     "jimp": "0.6.4",
     "mime-types": "2.1.24",
     "moment": "2.24.0",
-    "moment-duration-format": "2.3.1",
+    "moment-duration-format": "2.3.2",
     "moment-timezone": "0.5.25",
     "ms": "2.1.1",
     "mysql": "2.17.1",
     "pdfmake": "0.1.56",
     "reflect-metadata": "0.1.13",
-    "typeorm": "0.2.17"
+    "typeorm": "0.2.18"
   },
   "devDependencies": {
     "@ffflorian/jszip-cli": "2.2.0",

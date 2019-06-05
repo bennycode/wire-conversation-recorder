@@ -8,7 +8,6 @@ import {
   RemoteData,
   TextContent,
 } from '@wireapp/core/dist/conversation/content';
-import {LRUCache} from '@wireapp/lru-cache';
 import {Decoder, Encoder} from 'bazinga64';
 import fs from 'fs-extra';
 import Jimp = require('jimp');
@@ -20,11 +19,8 @@ import {MessageEntity} from '../entity/MessageEntity';
 const Printer = require('pdfmake');
 
 class RecordHandler extends MessageHandler {
-  private readonly cachedMessages: LRUCache<MessageEntity>;
-
   constructor() {
     super();
-    this.cachedMessages = new LRUCache(100);
   }
 
   async recordText(payload: PayloadBundle): Promise<void> {
@@ -60,6 +56,13 @@ class RecordHandler extends MessageHandler {
     }
   }
 
+  async convertImage(contentBase64: string, contentType: string = Jimp.MIME_JPEG): Promise<string> {
+    const base64Header = `data:${contentType};base64,`;
+    const gifImage = await Jimp.read(Buffer.from(contentBase64, 'base64'));
+    const contentWithType = await gifImage.getBase64Async(contentType);
+    return contentWithType.substr(base64Header.length);
+  }
+
   async getConversationContent(conversationId: string): Promise<Object[]> {
     const contents: Object[] = [];
     const messages: MessageEntity[] = await MessageEntity.getRepository().find({
@@ -78,27 +81,12 @@ class RecordHandler extends MessageHandler {
 
       if (message.contentType === 'text/plain') {
         const plainText = Decoder.fromBase64(message.contentBase64);
-
         contents.push(plainText.asString);
       } else if (message.contentType.startsWith('image/')) {
-        if (message.contentType === Jimp.MIME_GIF) {
-          try {
-            // "pdfmake" cannot handle GIFs by default so we convert them into JPEG files
-            const gifImage = await Jimp.read(Buffer.from(message.contentBase64, 'base64'));
-            const convertedGif = await gifImage.getBase64Async(Jimp.MIME_JPEG);
-            contents.push({
-              image: convertedGif,
-              width: 200,
-            });
-          } catch (error) {
-            console.warn(`Couldn't convert GIF image with ID "${message.messageId}" to JPEG.`, error);
-          }
-        } else {
-          contents.push({
-            image: `data:${message.contentType};base64,${message.contentBase64}`,
-            width: 200,
-          });
-        }
+        contents.push({
+          image: `data:${message.contentType};base64,${message.contentBase64}`,
+          width: 200,
+        });
       }
 
       contents.push('\n');
@@ -241,24 +229,14 @@ class RecordHandler extends MessageHandler {
     switch (payload.type) {
       case PayloadBundleType.ASSET_IMAGE:
         if (this.account && this.account.service) {
-          const imagePreview = this.cachedMessages.get(payload.id);
-          if (imagePreview) {
-            const imagePayload = payload.content as AssetContent;
-            const {uploaded} = imagePayload;
-            const imageArray = await this.account.service.conversation.getAsset(uploaded as RemoteData);
-            const base64Data = Encoder.toBase64(imageArray).asString;
-            await this.recordMessage(payload, imagePreview.contentType, base64Data);
-            this.cachedMessages.delete(payload.id);
-          }
-        }
-        break;
-      case PayloadBundleType.ASSET_META:
-        const imagePayload = payload.content as AssetContent;
-        const {original} = imagePayload;
-        if (original) {
-          const message = new MessageEntity();
-          message.contentType = original.mimeType;
-          this.cachedMessages.set(payload.id, message);
+          const imagePayload = payload.content as AssetContent;
+          const {uploaded} = imagePayload;
+          const imageArray = await this.account.service.conversation.getAsset(uploaded as RemoteData);
+          const base64Data = Encoder.toBase64(imageArray).asString;
+          // To ensure that all image types (GIF, PNG, ...) can be rendered in the PDF, we convert them into JPEG
+          const jpegContentType = Jimp.MIME_JPEG;
+          const base64JPEG = await this.convertImage(base64Data, jpegContentType);
+          await this.recordMessage(payload, jpegContentType, base64JPEG);
         }
         break;
       case PayloadBundleType.TEXT:
@@ -271,7 +249,7 @@ class RecordHandler extends MessageHandler {
             },
           });
           await this.sendText(payload.conversation, `Recorded messages in this conversation: ${recordedMessages}`);
-        } else if (textPayload.text.startsWith('/clear')) {
+        } else if (textPayload.text.startsWith('/purge')) {
           await MessageEntity.getRepository().clear();
           await this.sendText(payload.conversation, `Deleted all recorded messages in database.`);
         } else if (textPayload.text.startsWith('/export')) {
