@@ -1,6 +1,7 @@
 import {ClientType} from '@wireapp/api-client/dist/commonjs/client';
 import {Bot} from '@wireapp/bot-api';
 
+import {AutoConnectHandler} from './handler/AutoConnectHandler';
 import {DebugHandler} from './handler/DebugHandler';
 import {RecordHandler} from './handler/RecordHandler';
 import {TimeHandler} from './handler/TimeHandler';
@@ -19,6 +20,7 @@ const bot = new Bot(credentials, {
   clientType: ClientType.TEMPORARY,
 });
 
+bot.addHandler(new AutoConnectHandler());
 bot.addHandler(new DebugHandler());
 bot.addHandler(new RecordHandler());
 bot.addHandler(new TimeHandler());

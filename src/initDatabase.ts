@@ -1,10 +1,9 @@
 import 'reflect-metadata';
 import {Connection, ConnectionOptions, createConnection} from 'typeorm';
-import {MysqlConnectionOptions} from 'typeorm/driver/mysql/MysqlConnectionOptions';
 import {MessageEntity} from './entity/MessageEntity';
 
-function getConnectionOptions() {
-  const amazonRDS: MysqlConnectionOptions = {
+function getConnectionOptions(): ConnectionOptions {
+  const amazonRDS: ConnectionOptions = {
     database: String(process.env.RDS_DB_NAME),
     host: String(process.env.RDS_HOSTNAME),
     password: String(process.env.RDS_PASSWORD),
@@ -13,7 +12,7 @@ function getConnectionOptions() {
     username: String(process.env.RDS_USERNAME),
   };
 
-  const localhost = {
+  const localhost: ConnectionOptions = {
     database: 'test.db3',
     type: 'sqlite',
   };
@@ -32,5 +31,5 @@ export default function initDatabase(): Promise<Connection> {
     synchronize: true,
   });
 
-  return createConnection(connectionOptions as ConnectionOptions);
+  return createConnection(connectionOptions);
 }
