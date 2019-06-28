@@ -3,11 +3,7 @@ import {Bot} from '@wireapp/bot-api';
 
 import {AutoConnectHandler} from './handler/AutoConnectHandler';
 import {DebugHandler} from './handler/DebugHandler';
-import {RecordHandler} from './handler/RecordHandler';
-import {TimeHandler} from './handler/TimeHandler';
-import {UptimeHandler} from './handler/UptimeHandler';
-import {VersionHandler} from './handler/VersionHandler';
-import initDatabase from './initDatabase';
+import {AutoCallHandler} from "./handler/AutoCallHandler";
 
 require('dotenv').config();
 
@@ -21,13 +17,17 @@ const bot = new Bot(credentials, {
 });
 
 bot.addHandler(new AutoConnectHandler());
+bot.addHandler(new AutoCallHandler());
 bot.addHandler(new DebugHandler());
-bot.addHandler(new RecordHandler());
-bot.addHandler(new TimeHandler());
-bot.addHandler(new UptimeHandler());
-bot.addHandler(new VersionHandler());
 
-initDatabase()
-  .then(() => bot.start())
-  .then(() => console.log(`Bot runs with account "${credentials.email}" ...`))
-  .catch(error => console.error(`Bot fails with "${credentials.email}": ${error.message}`, error));
+// bot.addHandler(new RecordHandler());
+// bot.addHandler(new TimeHandler());
+// bot.addHandler(new UptimeHandler());
+// bot.addHandler(new VersionHandler());
+
+bot.start();
+
+// initDatabase()
+//   .then(() => bot.start())
+//   .then(() => console.log(`Bot runs with account "${credentials.email}" ...`))
+//   .catch(error => console.error(`Bot fails with "${credentials.email}": ${error.message}`, error));
