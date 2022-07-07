@@ -8,7 +8,7 @@
     "fs-extra": "8.0.1",
     "jimp": "0.6.4",
     "mime-types": "2.1.24",
-    "moment": "2.24.0",
+    "moment": "2.29.4",
     "moment-duration-format": "2.3.2",
     "moment-timezone": "0.5.25",
     "ms": "2.1.2",
